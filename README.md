@@ -1,5 +1,10 @@
 ## Como usar Docker na VPS da Hostinger para fazer o deploy do Laravel 12
 
+- [Ganhe 20% de desconto adicional na Hostinger](https://www.hostinger.com.br/referral?REFERRALCODE=1CESARNICOL13)
+
+- Cupom para ganhar 10% de desconto na Hostinger — não cumulativo com o link acima: celke
+
+Senha usada na aula, não utilizar a mesma: 58F7s8#9f65x
 
 ## Requisitos
 
@@ -101,3 +106,198 @@ Enviar os commits locais para um repositório remoto.
 ```
 git push -u origin main
 ```
+
+## Conectar o PC ao servidor com SSH
+
+Criar chave SSH (chave pública e privada).
+```
+ssh-keygen -t rsa -b 4096 -C "seu-email@exemplo.com"
+```
+```
+ssh-keygen -t rsa -b 4096 -C "cesar@celke.com.br"
+```
+
+Local que é criado a chave pública.
+```
+C:\Users\SeuUsuario\.ssh\
+```
+```
+C:\Users\cesar/.ssh/
+```
+
+Exibir o conteúdo da chave pública.
+```
+cat ~/.ssh/id_rsa.pub
+```
+
+Acessar o servidor com SSH.
+```
+ssh usuario-do-servidor@ip-do-servidor-vps
+```
+```
+ssh root@93.127.210.72
+```
+
+## Conectar Servidor ao GitHub
+
+Gerar a chave SSH no servidor.
+```
+ssh-keygen -t rsa -b 4096 -C "cesar@celke.com.br"
+```
+
+Imprimir a chave pública gerada.
+```
+cat ~/.ssh/id_rsa.pub
+```
+
+- No GitHub, vá para Settings (Configurações) do seu repositório ou da sua conta, em seguida, vá para SSH and GPG keys e clique em New SSH key. Cole a chave pública no campo fornecido e salve.
+
+Verificar a conexão com o GitHub.
+```
+ssh -T git@github.com
+```
+
+- Se gerar o erro "The authenticity of host 'github.com (xx.xxx.xx.xxx)' can't be established.". Isso é uma medida de segurança para evitar ataques de "man-in-the-middle". Necessário adicionar a chave do host do GitHub ao arquivo de known_hosts do seu servidor.
+
+Digite yes quando for solicitado.
+```
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+```
+
+Verificar a conexão novamente.
+```
+ssh -T git@github.com
+```
+
+- Mensagem de conexão realizada com sucesso. Hi nome-usuario! You've successfully authenticated, but GitHub does not provide shell access.
+
+## Enviar os arquivos do Github para a VPS da Hostinger
+
+Baixar os arquivos do GitHub para a VPS.
+```
+git clone <ssh_repository_url>
+```
+
+Acessar o diretório do projeto.
+```
+cd tutorial-meu-projeto-laravel-docker
+```
+
+Duplicar o arquivo ".env.example" e renomear para ".env".
+```
+cp .env.example .env
+```
+
+Abrir o arquivo ".env" e alterar as variaveis de ambiente.
+```
+nano .env
+```
+
+Ctrl + O e enter para salvar.<br>
+Ctrl + X para sair.<br>
+
+Alterar o valor das variaveis de ambiente.
+```
+APP_NAME=Celke
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_TIMEZONE=America/Sao_Paulo
+APP_URL=https://srv566492.hstgr.cloud 
+```
+
+Alterar as variaveis de conexão com banco de dados.
+```
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=laravel
+DB_USERNAME=sail
+DB_PASSWORD=password
+```
+
+- Executar um container temporário e remover automaticamente após o uso (--rm)
+- Montar o diretório atual (pwd) do host como /app dentro do container
+- Definir o diretório de trabalho dentro do container como /app (onde está o projeto)
+- Usar a imagem Docker oficial do Laravel Sail com PHP 8.4 e Composer
+- Executar o comando "composer install" dentro do container para instalar as dependências
+```
+docker run --rm \
+  -v $(pwd):/app \
+  -w /app \
+  laravelsail/php84-composer:latest \
+  composer install
+```
+
+Criar e iniciar os containers definidos no docker-compose.yml.
+Rodar MySQL, PHP-FPM, etc.
+Deixar o ambiente pronto para rodar comandos Artisan dentro do Sail.
+```
+./vendor/bin/sail up -d
+```
+
+Listar os containers.
+```
+docker ps
+```
+
+Acessar o bash do container.
+```
+docker exec -it tutorial-meu-projeto-laravel-docker-laravel.test-1 bash
+```
+
+Alterar o proprietário dos arquivos.
+```
+chown -R sail:sail /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/.env
+```
+
+Alterar a permissão.
+```
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+```
+
+Gerar a chave do app.
+```
+php artisan key:generate
+```
+
+Sair do bash do container.
+```
+exit
+```
+
+Verificar se os containers estão rodando.
+```
+docker ps
+```
+
+Se não estiverem rodando, necessário subir novamente com:
+```
+./vendor/bin/sail up -d
+```
+
+Rodar migrate para criar a base de dados e as tabelas.
+```
+./vendor/bin/sail artisan migrate
+```
+
+Rodar as seedeers para cadastrar registro de teste.
+```
+./vendor/bin/sail artisan db:seed
+```
+
+Se já estiver tudo rodando, o Laravel deve estar acessível via o navegador pelo IP público da VPS.
+```
+http://SEU_IP
+```
+```
+http://93.127.210.72
+```
+
+## Autor
+
+Este projeto foi desenvolvido por [Cesar Szpak](https://github.com/cesarszpak) e está hospedado no repositório da organização [Celke](https://github.com/celkecursos).
+
+## Licença
+
+Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE.txt) para mais detalhes.

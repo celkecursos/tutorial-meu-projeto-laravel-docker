@@ -8,6 +8,8 @@
 
     </head>
     <body>
-        Bem-vindo à Celke!
+        <h1>Bem-vindo à Celke!</h1>
+        <h2>Parabéns por concluir o tutorial!</h2>
+        <h3>Hoje, você aprendeu como usar o Docker na VPS da Hostinger e realizar o deploy do projeto Laravel 12.</h3>
     </body>
 </html>
