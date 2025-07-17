@@ -294,6 +294,161 @@ http://SEU_IP
 http://93.127.210.72
 ```
 
+# Configurar o DNS e instalar o SSL
+
+Alterar a porta no docker-compose.yml.
+```
+ports:
+  - '${APP_PORT:-8080}:80'
+```
+
+Expor a porta 8080.
+```
+export APP_PORT=8080
+```
+
+Parar e reiniciar os containers.
+```
+./vendor/bin/sail down
+./vendor/bin/sail up -d
+```
+
+Listar os containers.
+```
+docker ps
+```
+
+Instalar o Nginx na VPS (fora do Docker).
+```
+sudo apt update
+sudo apt install nginx -y
+```
+
+Recarregar o Nginx.
+```
+sudo systemctl reload nginx
+```
+
+Testar a configuração.
+```
+sudo nginx -t
+```
+
+Se estiver tudo OK deve retornar.
+```
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+Iniciar o Nginx se estiver pausado.
+```
+sudo systemctl start nginx
+```
+
+Criar o arquivo com as configuração do domínio no Nginx.
+```
+sudo nano /etc/nginx/sites-available/seusite.com.br
+```
+```
+sudo nano /etc/nginx/sites-available/celkeprime.com.br
+```
+
+Alterar as configurações no arquivo criado.
+```
+server {
+    listen 80;
+    server_name celkeprime.com.br www.celkeprime.com.br;
+
+    # Aumenta o limite do tamanho do cookie/header
+    large_client_header_buffers 4 16k;
+
+    location / {
+        proxy_pass http://localhost:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Ativar as configuração do site.
+```
+sudo ln -s /etc/nginx/sites-available/seusite.com.br /etc/nginx/sites-enabled/
+```
+```
+sudo ln -s /etc/nginx/sites-available/celkeprime.com.br /etc/nginx/sites-enabled/
+```
+
+Listar os sites.
+```
+ls -l /etc/nginx/sites-enabled/
+```
+
+Remover o site diferente do domínio.
+```
+sudo rm /etc/nginx/sites-enabled/dominiositediferente.com.br
+```
+```
+sudo rm /etc/nginx/sites-enabled/default
+```
+
+Recarregar o Nginx.
+```
+sudo systemctl reload nginx
+```
+
+Testar a configuração.
+```
+sudo nginx -t
+```
+
+Se estiver tudo OK deve retornar.
+```
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+Instalar o Certbot e plugin para Nginx.
+```
+sudo apt update
+sudo apt install certbot python3-certbot-nginx -y
+```
+
+Rodar o Certbot para gerar o certificado SSL.
+```
+sudo certbot --nginx -d celkeprime.com.br -d www.celkeprime.com.br
+```
+
+- Digitar durante a instalação do Certbot: seu_email@seu_dominio.com.br
+
+Acessar o domínio configurado.
+
+No tutorial o arquivo "/etc/nginx/sites-available/celkeprime.com.br" possui a configuração.
+```
+server {
+    listen 80;
+    server_name celkeprime.com.br www.celkeprime.com.br;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name celkeprime.com.br www.celkeprime.com.br;
+
+    ssl_certificate /etc/letsencrypt/live/celkeprime.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/celkeprime.com.br/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;  # redireciona para o Laravel rodando no Docker
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
 ## Autor
 
 Este projeto foi desenvolvido por [Cesar Szpak](https://github.com/cesarszpak) e está hospedado no repositório da organização [Celke](https://github.com/celkecursos).
